@@ -6,10 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>SBF Binnen Trainer</title>
 
-  <link rel="preconnect" href="https://googleapis.com">
-  <link rel="preconnect" href="https://gstatic.com" crossorigin>
-  <link href="https://googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-
+  <!-- App-Installation (PWA) -->
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -27,29 +24,44 @@
   <script src="questions.js"></script>
 
   <script>
-    /*  
+    /* ==========================================================
        EINSTELLUNGEN
-         */
-
-    // Prüfungsaufbau: Anzahl Fragen je Teil und Bestehensgrenze.
-    // Bitte mit der offiziellen Prüfungsordnung abgleichen.
-    const EXAM = {
-      parts: [
-        { k: 'Basisfragen',               n: 7  },
-        { k: 'Spezifische Fragen Binnen', n: 23 }
-      ],
-      passPct: 75
-    };
+       ========================================================== */
 
     const SEGELN = 'Spezifische Fragen Segeln';
     const CATS   = ['Basisfragen', 'Spezifische Fragen Binnen', SEGELN];
+
+    // Prüfungsarten. Hier kannst du Fragenzahl, Zeit und Bestehensgrenze ändern.
+    //   minutes: Zeit in Minuten
+    //   passPct: Prozent der Fragen, die insgesamt richtig sein müssen
+    //   parts:   Aus welchen Kategorien (cats) wie viele Fragen (n) gezogen werden
+    const EXAMS = {
+      schnell: {
+        label: 'Schnelle Prüfung',
+        minutes: 17,
+        passPct: 80,
+        parts: [
+          { name: 'Basis- & Binnenfragen', cats: ['Basisfragen', 'Spezifische Fragen Binnen'], n: 9 },
+          { name: 'Segelfragen',           cats: [SEGELN],                                     n: 3 }
+        ]
+      },
+      voll: {
+        label: 'Vollständige Prüfung',
+        minutes: 35,
+        passPct: 80,
+        parts: [
+          { name: 'Basis- & Binnenfragen', cats: ['Basisfragen', 'Spezifische Fragen Binnen'], n: 18 },
+          { name: 'Segelfragen',           cats: [SEGELN],                                     n: 7  }
+        ]
+      }
+    };
     const LETTERS = 'ABCD';
     const STORAGE_KEY = 'sbf-binnen-v1';
 
 
-    /*  
+    /* ==========================================================
        HILFSFUNKTIONEN
-         */
+       ========================================================== */
 
     const app = document.getElementById('app');
 
@@ -68,6 +80,14 @@
       return list;
     }
 
+    // Millisekunden als mm:ss
+    function formatTime(ms) {
+      const total = Math.max(0, Math.ceil(ms / 1000));
+      const mm = String(Math.floor(total / 60)).padStart(2, '0');
+      const ss = String(total % 60).padStart(2, '0');
+      return mm + ':' + ss;
+    }
+
     // Abbildungen vergrößern (kleine Tafelzeichen 2,5x, größere 1,5x)
     function scaleImg(img) {
       const factor = img.naturalWidth < 100 ? 2.5 : 1.5;
@@ -76,11 +96,11 @@
     }
 
 
-    /*  
+    /* ==========================================================
        LERNFORTSCHRITT (wird im Browser gespeichert)
        Pro Frage: r = Anzahl richtig, w = Anzahl falsch,
                   l = letztes Ergebnis ('r' oder 'w')
-         */
+       ========================================================== */
 
     let progress = {};
     try {
@@ -107,19 +127,22 @@
     const priority = q => (!progress[q.id] || lastResult(q) === 'w') ? 0 : 1;
 
 
-    /*  
+    /* ==========================================================
        ZUSTAND DER AKTUELLEN SITZUNG
        S = null          -> Startseite
-       S = { mode, items, i, done }
+       S = { mode, items, i, done, ... }
        mode: 'ueben' oder 'pruefung'
-         */
+       Nur Prüfung: exam (Einstellungen), deadline (Ablaufzeit),
+                    timedOut (Zeit abgelaufen?), timerId
+       ========================================================== */
 
     let S = null;
 
     // Eine Frage mit zufälliger Antwortreihenfolge vorbereiten.
     // order[k] = Index der Antwort an Position k (Index 0 ist die richtige).
-    function makeItem(q) {
-      return { q, order: shuffle([0, 1, 2, 3]), pick: null };
+    // part = Name des Prüfungsteils (nur in der Prüfung gesetzt).
+    function makeItem(q, part) {
+      return { q, part, order: shuffle([0, 1, 2, 3]), pick: null };
     }
 
     const isCorrect = item => item.pick !== null && item.order[item.pick] === 0;
@@ -130,14 +153,55 @@
       render();
     }
 
-    function startExam() {
-      let list = [];
-      EXAM.parts.forEach(part => {
-        const pool = Q.filter(q => q.k === part.k);
-        list = list.concat(shuffle(pool).slice(0, part.n));
+    function startExam(key) {
+      const exam = EXAMS[key];
+      const items = [];
+      exam.parts.forEach(part => {
+        const pool = Q.filter(q => part.cats.includes(q.k));
+        shuffle(pool).slice(0, part.n).forEach(q => items.push(makeItem(q, part.name)));
       });
-      S = { mode: 'pruefung', items: list.map(makeItem), i: 0 };
+
+      S = {
+        mode: 'pruefung',
+        exam,
+        items,
+        i: 0,
+        startedAt: Date.now(),
+        deadline: Date.now() + exam.minutes * 60000
+      };
+      startTimer();
       render();
+    }
+
+    // ----- Countdown für die Prüfung -----
+    // Die Restzeit wird aus der Ablaufzeit berechnet, daher stimmt sie auch,
+    // wenn der Tab zwischendurch im Hintergrund war.
+    function startTimer() {
+      stopTimer();
+      S.timerId = setInterval(updateTimer, 1000);
+    }
+
+    function stopTimer() {
+      if (S && S.timerId) {
+        clearInterval(S.timerId);
+        S.timerId = null;
+      }
+    }
+
+    function updateTimer() {
+      if (!S || S.done || !S.deadline) return;
+      const left = S.deadline - Date.now();
+
+      const el = document.getElementById('timer');
+      if (el) {
+        el.textContent = formatTime(left);
+        el.classList.toggle('warn', left <= 2 * 60000);   // letzte 2 Minuten rot
+      }
+
+      if (left <= 0) {            // Zeit abgelaufen: Prüfung automatisch abgeben
+        S.timedOut = true;
+        finish();
+      }
     }
 
     function answer(position) {
@@ -164,6 +228,9 @@
     }
 
     function finish() {
+      stopTimer();
+      S.finishedAt = Date.now();
+
       // Prüfung: Ergebnisse erst jetzt in den Lernfortschritt übernehmen
       if (S.mode === 'pruefung') {
         S.items.forEach(item => {
@@ -176,9 +243,9 @@
     }
 
 
-    /*  
+    /* ==========================================================
        ANSICHTEN
-         */
+       ========================================================== */
 
     // ----- Startseite -----
     function renderHome() {
@@ -203,7 +270,17 @@
           <span>${open} offen</span>
         </p>
 
-        <button class="primary" data-a="exam">Prüfung simulieren</button>
+        <div class="exams">
+          ${Object.keys(EXAMS).map(key => {
+            const e = EXAMS[key];
+            const n = e.parts.reduce((sum, p) => sum + p.n, 0);
+            return `
+              <button class="primary" data-a="exam" data-k="${key}">
+                <span>${e.label}</span>
+                <small>${n} Fragen, ${e.minutes} Minuten</small>
+              </button>`;
+          }).join('')}
+        </div>
 
         <h2>Üben mit sofortiger Auswertung</h2>
 
@@ -256,9 +333,15 @@
           ${S.i < count - 1 ? 'Weiter' : 'Auswertung'}
         </button>` : '';
 
+      const timer = S.deadline ? `
+          <span id="timer" class="timer ${S.deadline - Date.now() <= 2 * 60000 ? 'warn' : ''}">
+            ${formatTime(S.deadline - Date.now())}
+          </span>` : '';
+
       app.innerHTML = `
         <div class="top">
           <span>Frage ${S.i + 1} von ${count} (Nr. ${q.id})</span>
+          ${timer}
           <button class="ghost" data-a="stop">
             ${S.mode === 'pruefung' ? 'Abgeben' : 'Beenden'}
           </button>
@@ -286,29 +369,29 @@
       const wrong   = counted.filter(i => !isCorrect(i));
 
       let html = `
-        <h1>${S.mode === 'pruefung' ? 'Prüfung' : 'Auswertung'}</h1>
+        <h1>${S.mode === 'pruefung' ? S.exam.label : 'Auswertung'}</h1>
         <div class="big">${correct} von ${counted.length} richtig</div>`;
 
-      // Prüfung: Bestanden-Anzeige je Teil
+      // Prüfung: Bestanden oder nicht, plus Aufschlüsselung je Teil
       if (S.mode === 'pruefung') {
-        let passedAll = true;
-        let rows = '';
-        EXAM.parts.forEach(part => {
-          const items  = S.items.filter(i => i.q.k === part.k);
-          const right  = items.filter(isCorrect).length;
-          const passed = right / items.length * 100 >= EXAM.passPct;
-          passedAll = passedAll && passed;
-          rows += `
-            <p>${part.k}:
-              <b class="${passed ? 'pass' : 'fail'}">${right} von ${items.length}</b>
-              (${passed ? 'bestanden' : 'nicht bestanden'})
-            </p>`;
-        });
+        const exam     = S.exam;
+        const total    = S.items.length;
+        const needed   = Math.ceil(total * exam.passPct / 100);
+        const passed   = correct * 100 >= exam.passPct * total;
+        const used     = formatTime(Math.min(S.finishedAt, S.deadline) - S.startedAt);
+
+        const rows = exam.parts.map(part => {
+          const items = S.items.filter(i => i.part === part.name);
+          return `<p>${part.name}: <b>${items.filter(isCorrect).length} von ${items.length}</b></p>`;
+        }).join('');
+
         html += `
-          <p class="${passedAll ? 'pass' : 'fail'}">
-            <b>${passedAll ? 'Bestanden' : 'Nicht bestanden'}</b>
-            (Grenze: ${EXAM.passPct} % je Teil)
+          <p class="${passed ? 'pass' : 'fail'}">
+            <b>${passed ? 'Bestanden' : 'Nicht bestanden'}</b>
+            (Zum Bestehen: mindestens ${needed} richtig, ${exam.passPct} %)
           </p>
+          ${S.timedOut ? '<p class="fail">Zeit abgelaufen. Offene Fragen zählen als falsch.</p>' : ''}
+          <p class="sub">Benötigte Zeit: ${used} von ${exam.minutes}:00 Minuten</p>
           ${rows}`;
       }
 
@@ -339,9 +422,9 @@
     }
 
 
-    /*  
+    /* ==========================================================
        KLICKS (alle Buttons laufen hier zusammen, Aktion steht in data-a)
-         */
+       ========================================================== */
 
     app.addEventListener('click', e => {
       const button = e.target.closest('button');
@@ -350,7 +433,7 @@
       const action = button.dataset.a;
 
       if (action === 'exam') {
-        startExam();
+        startExam(button.dataset.k);
 
       } else if (action === 'practice') {
         const k = button.dataset.k;
@@ -386,9 +469,9 @@
     });
 
 
-    /*  
+    /* ==========================================================
        START
-         */
+       ========================================================== */
 
     render();
 

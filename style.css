@@ -1,4 +1,4 @@
-/*  
+/* ==========================================================
    SBF Binnen Trainer – Stylesheet
    Aufbau:
    1. Farben (hell / dunkel)
@@ -6,19 +6,19 @@
    3. Startseite
    4. Fragen-Ansicht
    5. Auswertung
-     */
+   ========================================================== */
 
 
 /* ---------- 1. Farben ----------
    Alle Farben stehen hier. Ändere nur diese Werte,
    dann passt sich die ganze App an. */
 :root {
-  --bg:     #000000;   /* Seitenhintergrund */
-  --card:   #181818;   /* Karten, Antwort-Buttons */
+  --bg:     #eef2f1;   /* Seitenhintergrund */
+  --card:   #ffffff;   /* Karten, Antwort-Buttons */
   --ink:    #10242e;   /* Haupttext */
-  --mute:   #8fa5ad;   /* Nebentext */
+  --mute:   #5b707a;   /* Nebentext */
   --line:   #cfdbdc;   /* Rahmen, Linien */
-  --acc:    #181818;   /* Akzentfarbe (Buttons, Fortschritt) */
+  --acc:    #1d5c73;   /* Akzentfarbe (Buttons, Fortschritt) */
   --onacc:  #ffffff;   /* Text auf Akzentfarbe */
   --ok:     #1f8a4c;   /* richtig */
   --bad:    #c8382f;   /* falsch */
@@ -29,13 +29,13 @@
 /* Dunkelmodus: wird automatisch aktiv, wenn das Gerät dunkel eingestellt ist */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:     #000000;
-    --card:   #181818;
-    --ink:    #c3c8ca;
+    --bg:     #0d1b22;
+    --card:   #14272f;
+    --ink:    #e6eef0;
     --mute:   #8fa5ad;
-    --line:   #cfdbdc;
-    --acc:    #181818;
-    --onacc:  #f4f5f6;
+    --line:   #25404a;
+    --acc:    #5fb3cf;
+    --onacc:  #06222c;
     --ok:     #46c27a;
     --bad:    #ef6b61;
     --okbg:   #12342a;
@@ -76,7 +76,7 @@ main {
 /* Überschriften und Fragetext (Serifenschrift) */
 h1,
 .q {
-  font-family:  'Inter', sans-serif;
+  font-family: "Iowan Old Style", Georgia, serif;
   font-weight: 600;
 }
 
@@ -186,6 +186,27 @@ button:focus-visible {
   cursor: default;
 }
 
+/* Die zwei Prüfungs-Buttons nebeneinander */
+.exams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.exams .primary {
+  margin-top: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.exams .primary small {
+  font-weight: 400;
+  opacity: .85;
+}
+
 /* Bereich mit "Fortschritt zurücksetzen" */
 .reset {
   margin-top: 28px;
@@ -202,6 +223,17 @@ button:focus-visible {
   color: var(--mute);
   font-size: 14px;
   margin-bottom: 10px;
+}
+
+/* Countdown in der Prüfung */
+.timer {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;   /* Ziffern gleich breit, kein Springen */
+  color: var(--ink);
+}
+
+.timer.warn {
+  color: var(--bad);                    /* letzte 2 Minuten */
 }
 
 /* Fortschrittslinie unter der Kopfzeile */
