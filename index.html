@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="theme-color" content="#1d5c73">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
 
   <!-- Design -->
@@ -143,6 +143,44 @@
 
     let S = null;
 
+    // Auswahl der Fragen für die Prüfung (Haken auf der Startseite).
+    // Beide aus = alle Fragen wie bisher. wrong = nur falsch beantwortete,
+    // open = nur unbeantwortete. Beide an = falsche und unbeantwortete zusammen.
+    const examFilter = { wrong: false, open: false };
+
+    const isFiltered = () => examFilter.wrong || examFilter.open;
+
+    function filterText() {
+      if (examFilter.wrong && examFilter.open) return 'Nur falsch beantwortete und unbeantwortete Fragen';
+      if (examFilter.wrong) return 'Nur falsch beantwortete Fragen';
+      if (examFilter.open)  return 'Nur unbeantwortete Fragen';
+      return '';
+    }
+
+    // Passt eine Frage zur gewählten Auswahl?
+    function matchesFilter(q) {
+      if (!isFiltered()) return true;
+      return (examFilter.wrong && lastResult(q) === 'w') ||
+             (examFilter.open  && !progress[q.id]);
+    }
+
+    // Plant eine Prüfung: Wie viele Fragen gibt es wirklich, und wie viel Zeit?
+    // Gibt es weniger passende Fragen als vorgesehen, werden Fragenzahl und Zeit
+    // entsprechend verkürzt (Zeit anteilig, aufgerundet).
+    function planExam(key) {
+      const exam = EXAMS[key];
+      const parts = exam.parts.map(part => {
+        const pool = Q.filter(q => part.cats.includes(q.k) && matchesFilter(q));
+        return { part, pool, n: Math.min(part.n, pool.length) };
+      });
+      const count = parts.reduce((sum, p) => sum + p.n, 0);
+      const regular = exam.parts.reduce((sum, p) => sum + p.n, 0);
+      const minutes = count === regular
+        ? exam.minutes
+        : Math.max(1, Math.ceil(exam.minutes * count / regular));
+      return { exam, parts, count, regular, minutes };
+    }
+
     // Eine Frage mit zufälliger Antwortreihenfolge vorbereiten.
     // order[k] = Index der Antwort an Position k (Index 0 ist die richtige).
     // part = Name des Prüfungsteils (nur in der Prüfung gesetzt).
@@ -159,20 +197,22 @@
     }
 
     function startExam(key) {
-      const exam = EXAMS[key];
+      const plan = planExam(key);
+      if (plan.count === 0) return;
+
       const items = [];
-      exam.parts.forEach(part => {
-        const pool = Q.filter(q => part.cats.includes(q.k));
-        shuffle(pool).slice(0, part.n).forEach(q => items.push(makeItem(q, part.name)));
+      plan.parts.forEach(({ part, pool, n }) => {
+        shuffle(pool).slice(0, n).forEach(q => items.push(makeItem(q, part.name)));
       });
 
       S = {
         mode: 'pruefung',
-        exam,
+        exam: { ...plan.exam, minutes: plan.minutes },
+        filterNote: filterText(),
         items,
         i: 0,
         startedAt: Date.now(),
-        deadline: Date.now() + exam.minutes * 60000
+        deadline: Date.now() + plan.minutes * 60000
       };
       startTimer();
       render();
@@ -259,6 +299,7 @@
       const bad   = Q.filter(q => lastResult(q) === 'w').length;
       const open  = total - good - bad;
       const countIn = k => Q.filter(q => q.k === k).length;
+      const plans = Object.keys(EXAMS).map(key => ({ key, ...planExam(key) }));
 
       app.innerHTML = `
         <h1>Sportbootführerschein Binnen</h1>
@@ -275,17 +316,30 @@
           <span>${open} offen</span>
         </p>
 
+        <fieldset class="filter">
+          <legend>Fragen für die Prüfung</legend>
+          <label>
+            <input type="checkbox" data-f="wrong" ${examFilter.wrong ? 'checked' : ''}>
+            <span>Nur falsch beantwortete</span><small>${bad}</small>
+          </label>
+          <label>
+            <input type="checkbox" data-f="open" ${examFilter.open ? 'checked' : ''}>
+            <span>Nur unbeantwortete</span><small>${open}</small>
+          </label>
+          <p class="hint">Ohne Haken werden alle Fragen verwendet. Mit beiden Haken kommen
+            falsche und unbeantwortete Fragen zusammen.</p>
+        </fieldset>
+
         <div class="exams">
-          ${Object.keys(EXAMS).map(key => {
-            const e = EXAMS[key];
-            const n = e.parts.reduce((sum, p) => sum + p.n, 0);
-            return `
-              <button class="primary" data-a="exam" data-k="${key}">
-                <span>${e.label}</span>
-                <small>${n} Fragen, ${e.minutes} Minuten</small>
-              </button>`;
-          }).join('')}
+          ${plans.map(plan => `
+            <button class="primary" data-a="exam" data-k="${plan.key}" ${plan.count ? '' : 'disabled'}>
+              <span>${plan.exam.label}</span>
+              <small>${plan.count ? `${plan.count} Fragen, ${plan.minutes} Minuten` : 'Keine passenden Fragen'}</small>
+            </button>`).join('')}
         </div>
+        ${isFiltered() && plans.some(p => p.count && p.count < p.regular) ? `
+          <p class="hint">Es gibt weniger passende Fragen als vorgesehen. Fragenzahl und
+            Zeit werden entsprechend verkürzt.</p>` : ''}
 
         <h2>Üben mit sofortiger Auswertung</h2>
 
@@ -375,6 +429,7 @@
 
       let html = `
         <h1>${S.mode === 'pruefung' ? S.exam.label : 'Auswertung'}</h1>
+        ${S.filterNote ? `<p class="sub">${S.filterNote}</p>` : ''}
         <div class="big">${correct} von ${counted.length} richtig</div>`;
 
       // Prüfung: Bestanden oder nicht, plus Aufschlüsselung je Teil
@@ -387,6 +442,7 @@
 
         const rows = exam.parts.map(part => {
           const items = S.items.filter(i => i.part === part.name);
+          if (!items.length) return '';
           return `<p>${part.name}: <b>${items.filter(isCorrect).length} von ${items.length}</b></p>`;
         }).join('');
 
@@ -471,6 +527,17 @@
           render();
         }
       }
+    });
+
+
+    // Haken der Fragenauswahl (Checkboxen lösen "change" aus, nicht "click")
+    app.addEventListener('change', e => {
+      const key = e.target.dataset && e.target.dataset.f;
+      if (!key) return;
+      examFilter[key] = e.target.checked;
+      render();
+      const again = app.querySelector && app.querySelector(`[data-f="${key}"]`);
+      if (again) again.focus();                 // Tastatur-Fokus behalten
     });
 
 

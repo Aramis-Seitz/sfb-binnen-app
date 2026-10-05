@@ -176,6 +176,51 @@ a:focus-visible {
   cursor: default;
 }
 
+/* Fragenauswahl für die Prüfung (zwei Haken) */
+.filter {
+  margin: 20px 0 0;
+  padding: 10px 16px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.filter legend {
+  padding: 0 6px;
+  font-size: 14px;
+  color: var(--mute);
+}
+
+.filter label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.filter input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--onacc);
+}
+
+.filter label span {
+  flex: 1;
+}
+
+.filter small {
+  color: var(--mute);
+}
+
+/* Kleiner Erklärungstext */
+.hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--mute);
+}
+
 /* Die zwei Prüfungs-Buttons nebeneinander */
 .exams {
   display: grid;
@@ -190,6 +235,11 @@ a:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.primary:disabled {
+  opacity: .5;
+  cursor: default;
 }
 
 .exams .primary small {
