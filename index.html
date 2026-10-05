@@ -1,128 +1,398 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>SBF Binnen Trainer</title>
-<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png">
-<meta name="theme-color" content="#1d5c73"><meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="icon-192.png">
-<style>
-:root{--bg:#eef2f1;--card:#fff;--ink:#10242e;--mute:#5b707a;--line:#cfdbdc;--acc:#1d5c73;--onacc:#fff;--ok:#1f8a4c;--bad:#c8382f;--okbg:#e4f4ea;--badbg:#fbe9e7}
-@media(prefers-color-scheme:dark){:root{--bg:#0d1b22;--card:#14272f;--ink:#e6eef0;--mute:#8fa5ad;--line:#25404a;--acc:#5fb3cf;--onacc:#06222c;--ok:#46c27a;--bad:#ef6b61;--okbg:#12342a;--badbg:#3a1f1d}}
-*{box-sizing:border-box}html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-main{max-width:640px;margin:0 auto;padding:20px 16px 48px}
-h1,.q{font-family:"Iowan Old Style",Georgia,serif;font-weight:600}
-h1{font-size:30px;line-height:1.15;margin:8px 0 4px}
-h2{font-size:15px;margin:28px 0 8px;color:var(--mute);font-weight:600}
-.sub{color:var(--mute);margin:0 0 20px}
-button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line)}
-.bar i{display:block}.bar .g{background:var(--ok)}.bar .r{background:var(--bad)}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--mute);margin:8px 0 0}
-.row{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 8px}
-.row small{color:var(--mute)}
-.row:disabled{opacity:.5;cursor:default}
-.primary{width:100%;background:var(--acc);color:var(--onacc);border:0;border-radius:10px;padding:15px 16px;font-weight:600;margin-top:20px}
-.ghost{background:none;border:0;color:var(--mute);padding:6px 0}
-.top{display:flex;justify-content:space-between;align-items:center;color:var(--mute);font-size:14px;margin-bottom:10px}
-.prog{height:4px;background:var(--line);border-radius:2px;margin-bottom:20px}.prog i{display:block;height:100%;background:var(--acc);border-radius:2px}
-.q{font-size:21px;line-height:1.35;margin:0 0 16px}
-.imgs{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 16px}
-.imgs img{background:#fff;border-radius:6px;border:1px solid var(--line);max-width:100%;height:auto}
-.ans{display:flex;gap:12px;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 10px}
-.ans b{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:13px}
-.ans.ok{border-color:var(--ok);background:var(--okbg)}.ans.ok b{background:var(--ok);border-color:var(--ok);color:#fff}
-.ans.bad{border-color:var(--bad);background:var(--badbg)}.ans.bad b{background:var(--bad);border-color:var(--bad);color:#fff}
-.ans.sel{border-color:var(--acc)}
-.big{font-size:44px;font-weight:700;margin:4px 0}
-.pass{color:var(--ok)}.fail{color:var(--bad)}
-.rev{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 10px}
-.rev p{margin:4px 0}.rev .c{color:var(--ok)}.rev .w{color:var(--bad)}
-</style></head><body><main id="app"></main>
-<script src="questions.js"></script>
-<script>
-// ---- Einstellungen: Prüfungsaufbau (bitte mit der offiziellen Prüfungsordnung abgleichen) ----
-const EXAM={parts:[{k:'Basisfragen',n:7},{k:'Spezifische Fragen Binnen',n:23}],passPct:75};
-const SEGELN='Spezifische Fragen Segeln', CATS=['Basisfragen','Spezifische Fragen Binnen',SEGELN];
-const $=document.getElementById('app'), KEY='sbf-binnen-v1';
-let st={}; try{st=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
-const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
-const L='ABCD';
-let S=null;
-function mk(q){return{q,order:shuf([0,1,2,3]),pick:null}}
-function start(mode,pool,n){
-  let list=shuf(pool);
-  if(mode==='ueben'){list.sort((a,b)=>score(a)-score(b))}
-  S={mode,items:(n?list.slice(0,n):list).map(mk),i:0};render();
-}
-const score=q=>{const s=st[q.id];return !s?0:s.l==='w'?0:1};
-function startExam(){
-  let list=[];EXAM.parts.forEach(p=>list=list.concat(shuf(Q.filter(q=>q.k===p.k)).slice(0,p.n)));
-  S={mode:'pruefung',items:list.map(mk),i:0};render();
-}
-function answer(o){
-  const it=S.items[S.i]; if(it.pick!==null)return;
-  it.pick=o;
-  if(S.mode==='ueben'){const ok=it.order[o]===0,s=st[it.q.id]||{r:0,w:0};ok?s.r++:s.w++;s.l=ok?'r':'w';st[it.q.id]=s;save();}
-  if(S.mode==='pruefung')next(); else render();
-}
-function next(){ if(S.i<S.items.length-1){S.i++;render()} else finish(); }
-function finish(){
-  if(S.mode==='pruefung')S.items.forEach(it=>{if(it.pick===null)return;const ok=it.order[it.pick]===0,s=st[it.q.id]||{r:0,w:0};ok?s.r++:s.w++;s.l=ok?'r':'w';st[it.q.id]=s});
-  save();S.done=true;render();
-}
-const okOf=it=>it.pick!==null&&it.order[it.pick]===0;
-function home(){
-  const tot=Q.length,g=Q.filter(q=>st[q.id]&&st[q.id].l==='r').length,w=Q.filter(q=>st[q.id]&&st[q.id].l==='w').length;
-  const cnt=k=>Q.filter(q=>q.k===k).length;
-  $.innerHTML=`<h1>Sportbootführerschein Binnen</h1><p class="sub">Fragenkatalog ab 01.08.2023, ${tot} Fragen</p>
-  <div class="bar" role="img" aria-label="${g} richtig, ${w} falsch, ${tot-g-w} offen"><i class="g" style="width:${g/tot*100}%"></i><i class="r" style="width:${w/tot*100}%"></i></div>
-  <p class="legend"><span>${g} sicher</span><span>${w} zu wiederholen</span><span>${tot-g-w} offen</span></p>
-  <button class="primary" data-a="exam">Prüfung simulieren</button>
-  <h2>Üben mit sofortiger Auswertung</h2>
-  <button class="row" data-a="p" data-k="*"><span>Alle Fragen</span><small>${tot}</small></button>
-  ${CATS.map(k=>`<button class="row" data-a="p" data-k="${k}"><span>${k}</span><small>${cnt(k)}</small></button>`).join('')}
-  <button class="row" data-a="p" data-k="!" ${w?'':'disabled'}><span>Fehler wiederholen</span><small>${w}</small></button>
-  <p style="margin-top:28px"><button class="ghost" data-a="reset">Fortschritt zurücksetzen</button></p>`;
-}
-function quiz(){
-  const it=S.items[S.i],q=it.q,n=S.items.length,shown=it.pick!==null&&S.mode==='ueben';
-  $.innerHTML=`<div class="top"><span>Frage ${S.i+1} von ${n} (Nr. ${q.id})</span><button class="ghost" data-a="stop">${S.mode==='pruefung'?'Abgeben':'Beenden'}</button></div>
-  <div class="prog"><i style="width:${(S.i+(shown?1:0))/n*100}%"></i></div>
-  <p class="q">${esc(q.q)}</p>
-  ${q.img.length?`<div class="imgs">${q.img.map(s=>`<img src="${s}" alt="Abbildung zur Frage" onload="this.style.width=Math.min(this.naturalWidth*(this.naturalWidth<100?2.5:1.5),this.parentNode.clientWidth)+'px'">`).join('')}</div>`:''}
-  ${it.order.map((o,k)=>{let c='ans';if(shown){if(o===0)c+=' ok';else if(k===it.pick)c+=' bad'}return`<button class="${c}" data-a="ans" data-o="${k}" ${shown?'disabled':''}><b>${L[k]}</b><span>${esc(q.a[o])}</span></button>`}).join('')}
-  ${shown?`<button class="primary" data-a="next">${S.i<n-1?'Weiter':'Auswertung'}</button>`:''}`;
-  if(!shown)window.scrollTo(0,0);
-}
-function result(){
-  const base=S.mode==='pruefung'?S.items:S.items.filter(i=>i.pick!==null),n=base.length,ok=base.filter(okOf).length;
-  const wrong=base.filter(i=>!okOf(i));
-  let head=`<h1>${S.mode==='pruefung'?'Prüfung':'Auswertung'}</h1><div class="big">${ok} von ${n} richtig</div>`;
-  if(S.mode==='pruefung'){
-    let all=true,rows='';
-    EXAM.parts.forEach(p=>{const its=S.items.filter(i=>i.q.k===p.k),o=its.filter(okOf).length,pass=o/its.length*100>=EXAM.passPct;all=all&&pass;
-      rows+=`<p>${p.k}: <b class="${pass?'pass':'fail'}">${o} von ${its.length}</b> (${pass?'bestanden':'nicht bestanden'})</p>`});
-    head+=`<p class="${all?'pass':'fail'}"><b>${all?'Bestanden':'Nicht bestanden'}</b> (Grenze: ${EXAM.passPct} % je Teil)</p>${rows}`;
-  }
-  $.innerHTML=head+(wrong.length?`<h2>Falsch beantwortet</h2>`+wrong.map(i=>`<div class="rev"><p><b>${i.q.id}.</b> ${esc(i.q.q)}</p>${i.pick!==null?`<p class="w">Deine Antwort: ${esc(i.q.a[i.order[i.pick]])}</p>`:'<p class="w">Nicht beantwortet</p>'}<p class="c">Richtig: ${esc(i.q.a[0])}</p></div>`).join(''):'<p class="pass">Alles richtig.</p>')+
-  `<button class="primary" data-a="home">Zur Übersicht</button>`;
-  window.scrollTo(0,0);
-}
-function render(){ !S?home():S.done?result():quiz(); }
-$.addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b||b.disabled)return;const a=b.dataset.a;
-  if(a==='exam')startExam();
-  else if(a==='p'){const k=b.dataset.k;start('ueben',k==='*'?Q:k==='!'?Q.filter(q=>st[q.id]&&st[q.id].l==='w'):Q.filter(q=>q.k===k),k==='*'||k==='!'?null:null)}
-  else if(a==='ans')answer(+b.dataset.o);
-  else if(a==='next')next();
-  else if(a==='stop'){if(confirm(S.mode==='pruefung'?'Prüfung jetzt abgeben? Offene Fragen zählen als falsch.':'Übung beenden?'))finish()}
-  else if(a==='home'){S=null;render()}
-  else if(a==='reset'){if(confirm('Gesamten Lernfortschritt löschen?')){st={};save();render()}}
-});
-render();
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
-</script></body></html>
+<html lang="de">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SBF Binnen Trainer</title>
+
+  <!-- App-Installation (PWA) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#1d5c73">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- Design -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <main id="app"></main>
+
+  <!-- Fragen (aus der PDF erzeugt) -->
+  <script src="questions.js"></script>
+
+  <script>
+    /*  
+       EINSTELLUNGEN
+         */
+
+    // Prüfungsaufbau: Anzahl Fragen je Teil und Bestehensgrenze.
+    // Bitte mit der offiziellen Prüfungsordnung abgleichen.
+    const EXAM = {
+      parts: [
+        { k: 'Basisfragen',               n: 7  },
+        { k: 'Spezifische Fragen Binnen', n: 23 }
+      ],
+      passPct: 75
+    };
+
+    const SEGELN = 'Spezifische Fragen Segeln';
+    const CATS   = ['Basisfragen', 'Spezifische Fragen Binnen', SEGELN];
+    const LETTERS = 'ABCD';
+    const STORAGE_KEY = 'sbf-binnen-v1';
+
+
+    /*  
+       HILFSFUNKTIONEN
+         */
+
+    const app = document.getElementById('app');
+
+    // Text für HTML absichern
+    const esc = s => s.replace(/[&<>"]/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'
+    }[c]));
+
+    // Liste zufällig mischen
+    function shuffle(list) {
+      list = list.slice();
+      for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+      return list;
+    }
+
+    // Abbildungen vergrößern (kleine Tafelzeichen 2,5x, größere 1,5x)
+    function scaleImg(img) {
+      const factor = img.naturalWidth < 100 ? 2.5 : 1.5;
+      const width  = Math.min(img.naturalWidth * factor, img.parentNode.clientWidth);
+      img.style.width = width + 'px';
+    }
+
+
+    /*  
+       LERNFORTSCHRITT (wird im Browser gespeichert)
+       Pro Frage: r = Anzahl richtig, w = Anzahl falsch,
+                  l = letztes Ergebnis ('r' oder 'w')
+         */
+
+    let progress = {};
+    try {
+      progress = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch (e) {}
+
+    function saveProgress() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+      } catch (e) {}
+    }
+
+    // Ergebnis einer Frage festhalten
+    function recordResult(questionId, correct) {
+      const s = progress[questionId] || { r: 0, w: 0 };
+      if (correct) s.r++; else s.w++;
+      s.l = correct ? 'r' : 'w';
+      progress[questionId] = s;
+    }
+
+    const lastResult = q => progress[q.id] && progress[q.id].l;
+
+    // Sortierwert für den Übungsmodus: Falsche und neue Fragen zuerst
+    const priority = q => (!progress[q.id] || lastResult(q) === 'w') ? 0 : 1;
+
+
+    /*  
+       ZUSTAND DER AKTUELLEN SITZUNG
+       S = null          -> Startseite
+       S = { mode, items, i, done }
+       mode: 'ueben' oder 'pruefung'
+         */
+
+    let S = null;
+
+    // Eine Frage mit zufälliger Antwortreihenfolge vorbereiten.
+    // order[k] = Index der Antwort an Position k (Index 0 ist die richtige).
+    function makeItem(q) {
+      return { q, order: shuffle([0, 1, 2, 3]), pick: null };
+    }
+
+    const isCorrect = item => item.pick !== null && item.order[item.pick] === 0;
+
+    function startPractice(pool) {
+      const list = shuffle(pool).sort((a, b) => priority(a) - priority(b));
+      S = { mode: 'ueben', items: list.map(makeItem), i: 0 };
+      render();
+    }
+
+    function startExam() {
+      let list = [];
+      EXAM.parts.forEach(part => {
+        const pool = Q.filter(q => q.k === part.k);
+        list = list.concat(shuffle(pool).slice(0, part.n));
+      });
+      S = { mode: 'pruefung', items: list.map(makeItem), i: 0 };
+      render();
+    }
+
+    function answer(position) {
+      const item = S.items[S.i];
+      if (item.pick !== null) return;          // schon beantwortet
+      item.pick = position;
+
+      if (S.mode === 'ueben') {
+        recordResult(item.q.id, isCorrect(item));
+        saveProgress();
+      }
+
+      // Prüfung: direkt weiter, kein Feedback
+      if (S.mode === 'pruefung') next(); else render();
+    }
+
+    function next() {
+      if (S.i < S.items.length - 1) {
+        S.i++;
+        render();
+      } else {
+        finish();
+      }
+    }
+
+    function finish() {
+      // Prüfung: Ergebnisse erst jetzt in den Lernfortschritt übernehmen
+      if (S.mode === 'pruefung') {
+        S.items.forEach(item => {
+          if (item.pick !== null) recordResult(item.q.id, isCorrect(item));
+        });
+      }
+      saveProgress();
+      S.done = true;
+      render();
+    }
+
+
+    /*  
+       ANSICHTEN
+         */
+
+    // ----- Startseite -----
+    function renderHome() {
+      const total = Q.length;
+      const good  = Q.filter(q => lastResult(q) === 'r').length;
+      const bad   = Q.filter(q => lastResult(q) === 'w').length;
+      const open  = total - good - bad;
+      const countIn = k => Q.filter(q => q.k === k).length;
+
+      app.innerHTML = `
+        <h1>Sportbootführerschein Binnen</h1>
+        <p class="sub">Fragenkatalog ab 01.08.2023, ${total} Fragen</p>
+
+        <div class="bar" role="img"
+             aria-label="${good} richtig, ${bad} falsch, ${open} offen">
+          <i class="g" style="width:${good / total * 100}%"></i>
+          <i class="r" style="width:${bad / total * 100}%"></i>
+        </div>
+        <p class="legend">
+          <span>${good} sicher</span>
+          <span>${bad} zu wiederholen</span>
+          <span>${open} offen</span>
+        </p>
+
+        <button class="primary" data-a="exam">Prüfung simulieren</button>
+
+        <h2>Üben mit sofortiger Auswertung</h2>
+
+        <button class="row" data-a="practice" data-k="*">
+          <span>Alle Fragen</span><small>${total}</small>
+        </button>
+
+        ${CATS.map(k => `
+          <button class="row" data-a="practice" data-k="${k}">
+            <span>${k}</span><small>${countIn(k)}</small>
+          </button>`).join('')}
+
+        <button class="row" data-a="practice" data-k="!" ${bad ? '' : 'disabled'}>
+          <span>Fehler wiederholen</span><small>${bad}</small>
+        </button>
+
+        <p class="reset">
+          <button class="ghost" data-a="reset">Fortschritt zurücksetzen</button>
+        </p>`;
+    }
+
+    // ----- Frage -----
+    function renderQuestion() {
+      const item   = S.items[S.i];
+      const q      = item.q;
+      const count  = S.items.length;
+      const reveal = item.pick !== null && S.mode === 'ueben';   // Feedback zeigen?
+
+      const images = q.img.length ? `
+        <div class="imgs">
+          ${q.img.map(src => `
+            <img src="${src}" alt="Abbildung zur Frage" onload="scaleImg(this)">`).join('')}
+        </div>` : '';
+
+      const answers = item.order.map((origIndex, pos) => {
+        let cls = 'ans';
+        if (reveal) {
+          if (origIndex === 0)     cls += ' ok';    // richtige Antwort
+          else if (pos === item.pick) cls += ' bad'; // falsch gewählt
+        }
+        return `
+          <button class="${cls}" data-a="ans" data-o="${pos}" ${reveal ? 'disabled' : ''}>
+            <b>${LETTERS[pos]}</b>
+            <span>${esc(q.a[origIndex])}</span>
+          </button>`;
+      }).join('');
+
+      const nextButton = reveal ? `
+        <button class="primary" data-a="next">
+          ${S.i < count - 1 ? 'Weiter' : 'Auswertung'}
+        </button>` : '';
+
+      app.innerHTML = `
+        <div class="top">
+          <span>Frage ${S.i + 1} von ${count} (Nr. ${q.id})</span>
+          <button class="ghost" data-a="stop">
+            ${S.mode === 'pruefung' ? 'Abgeben' : 'Beenden'}
+          </button>
+        </div>
+
+        <div class="prog">
+          <i style="width:${(S.i + (reveal ? 1 : 0)) / count * 100}%"></i>
+        </div>
+
+        <p class="q">${esc(q.q)}</p>
+        ${images}
+        ${answers}
+        ${nextButton}`;
+
+      if (!reveal) window.scrollTo(0, 0);
+    }
+
+    // ----- Auswertung -----
+    function renderResult() {
+      // Prüfung: alle Fragen zählen. Üben: nur die beantworteten.
+      const counted = S.mode === 'pruefung'
+        ? S.items
+        : S.items.filter(i => i.pick !== null);
+      const correct = counted.filter(isCorrect).length;
+      const wrong   = counted.filter(i => !isCorrect(i));
+
+      let html = `
+        <h1>${S.mode === 'pruefung' ? 'Prüfung' : 'Auswertung'}</h1>
+        <div class="big">${correct} von ${counted.length} richtig</div>`;
+
+      // Prüfung: Bestanden-Anzeige je Teil
+      if (S.mode === 'pruefung') {
+        let passedAll = true;
+        let rows = '';
+        EXAM.parts.forEach(part => {
+          const items  = S.items.filter(i => i.q.k === part.k);
+          const right  = items.filter(isCorrect).length;
+          const passed = right / items.length * 100 >= EXAM.passPct;
+          passedAll = passedAll && passed;
+          rows += `
+            <p>${part.k}:
+              <b class="${passed ? 'pass' : 'fail'}">${right} von ${items.length}</b>
+              (${passed ? 'bestanden' : 'nicht bestanden'})
+            </p>`;
+        });
+        html += `
+          <p class="${passedAll ? 'pass' : 'fail'}">
+            <b>${passedAll ? 'Bestanden' : 'Nicht bestanden'}</b>
+            (Grenze: ${EXAM.passPct} % je Teil)
+          </p>
+          ${rows}`;
+      }
+
+      // Liste der falschen Fragen
+      if (wrong.length) {
+        html += '<h2>Falsch beantwortet</h2>' + wrong.map(item => `
+          <div class="rev">
+            <p><b>${item.q.id}.</b> ${esc(item.q.q)}</p>
+            ${item.pick !== null
+              ? `<p class="w">Deine Antwort: ${esc(item.q.a[item.order[item.pick]])}</p>`
+              : '<p class="w">Nicht beantwortet</p>'}
+            <p class="c">Richtig: ${esc(item.q.a[0])}</p>
+          </div>`).join('');
+      } else {
+        html += '<p class="pass">Alles richtig.</p>';
+      }
+
+      html += '<button class="primary" data-a="home">Zur Übersicht</button>';
+      app.innerHTML = html;
+      window.scrollTo(0, 0);
+    }
+
+    // Passende Ansicht anzeigen
+    function render() {
+      if (!S)           renderHome();
+      else if (S.done)  renderResult();
+      else              renderQuestion();
+    }
+
+
+    /*  
+       KLICKS (alle Buttons laufen hier zusammen, Aktion steht in data-a)
+         */
+
+    app.addEventListener('click', e => {
+      const button = e.target.closest('button');
+      if (!button || button.disabled) return;
+
+      const action = button.dataset.a;
+
+      if (action === 'exam') {
+        startExam();
+
+      } else if (action === 'practice') {
+        const k = button.dataset.k;
+        let pool;
+        if (k === '*')      pool = Q;                                           // alle
+        else if (k === '!') pool = Q.filter(q => lastResult(q) === 'w');        // Fehler
+        else                pool = Q.filter(q => q.k === k);                    // Kategorie
+        startPractice(pool);
+
+      } else if (action === 'ans') {
+        answer(Number(button.dataset.o));
+
+      } else if (action === 'next') {
+        next();
+
+      } else if (action === 'stop') {
+        const msg = S.mode === 'pruefung'
+          ? 'Prüfung jetzt abgeben? Offene Fragen zählen als falsch.'
+          : 'Übung beenden?';
+        if (confirm(msg)) finish();
+
+      } else if (action === 'home') {
+        S = null;
+        render();
+
+      } else if (action === 'reset') {
+        if (confirm('Gesamten Lernfortschritt löschen?')) {
+          progress = {};
+          saveProgress();
+          render();
+        }
+      }
+    });
+
+
+    /*  
+       START
+         */
+
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+
+</html>
