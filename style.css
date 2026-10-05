@@ -1,0 +1,325 @@
+/*  
+   SBF Binnen Trainer – Stylesheet
+   Aufbau:
+   1. Farben (hell / dunkel)
+   2. Grundlagen
+   3. Startseite
+   4. Fragen-Ansicht
+   5. Auswertung
+     */
+
+
+/* ---------- 1. Farben ----------
+   Alle Farben stehen hier. Ändere nur diese Werte,
+   dann passt sich die ganze App an. */
+:root {
+  --bg:     #eef2f1;   /* Seitenhintergrund */
+  --card:   #ffffff;   /* Karten, Antwort-Buttons */
+  --ink:    #10242e;   /* Haupttext */
+  --mute:   #5b707a;   /* Nebentext */
+  --line:   #cfdbdc;   /* Rahmen, Linien */
+  --acc:    #1d5c73;   /* Akzentfarbe (Buttons, Fortschritt) */
+  --onacc:  #ffffff;   /* Text auf Akzentfarbe */
+  --ok:     #1f8a4c;   /* richtig */
+  --bad:    #c8382f;   /* falsch */
+  --okbg:   #e4f4ea;   /* Hintergrund richtige Antwort */
+  --badbg:  #fbe9e7;   /* Hintergrund falsche Antwort */
+}
+
+/* Dunkelmodus: wird automatisch aktiv, wenn das Gerät dunkel eingestellt ist */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:     #0d1b22;
+    --card:   #14272f;
+    --ink:    #e6eef0;
+    --mute:   #8fa5ad;
+    --line:   #25404a;
+    --acc:    #5fb3cf;
+    --onacc:  #06222c;
+    --ok:     #46c27a;
+    --bad:    #ef6b61;
+    --okbg:   #12342a;
+    --badbg:  #3a1f1d;
+  }
+}
+
+
+/* ---------- 2. Grundlagen ---------- */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Abstand zu Notch und Statusleiste auf dem Handy */
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+/* Überschriften und Fragetext (Serifenschrift) */
+h1,
+.q {
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 30px;
+  line-height: 1.15;
+  margin: 8px 0 4px;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mute);
+  margin: 28px 0 8px;
+}
+
+.sub {
+  color: var(--mute);
+  margin: 0 0 20px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Sichtbarer Rahmen bei Tastatur-Bedienung */
+button:focus-visible {
+  outline: 3px solid var(--acc);
+  outline-offset: 2px;
+}
+
+/* Großer Haupt-Button (z. B. "Prüfung simulieren", "Weiter") */
+.primary {
+  width: 100%;
+  background: var(--acc);
+  color: var(--onacc);
+  border: 0;
+  border-radius: 10px;
+  padding: 15px 16px;
+  font-weight: 600;
+  margin-top: 20px;
+}
+
+/* Unauffälliger Text-Button (z. B. "Beenden") */
+.ghost {
+  background: none;
+  border: 0;
+  color: var(--mute);
+  padding: 6px 0;
+}
+
+
+/* ---------- 3. Startseite ---------- */
+
+/* Fortschrittsbalken (grün = sicher, rot = zu wiederholen) */
+.bar {
+  display: flex;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.bar i {
+  display: block;
+}
+
+.bar .g {
+  background: var(--ok);
+}
+
+.bar .r {
+  background: var(--bad);
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--mute);
+  margin: 8px 0 0;
+}
+
+/* Zeilen-Buttons in der Kategorie-Liste */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 0 0 8px;
+}
+
+.row small {
+  color: var(--mute);
+}
+
+.row:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+/* Bereich mit "Fortschritt zurücksetzen" */
+.reset {
+  margin-top: 28px;
+}
+
+
+/* ---------- 4. Fragen-Ansicht ---------- */
+
+/* Kopfzeile: "Frage 3 von 72" und "Beenden" */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--mute);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+/* Fortschrittslinie unter der Kopfzeile */
+.prog {
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  margin-bottom: 20px;
+}
+
+.prog i {
+  display: block;
+  height: 100%;
+  background: var(--acc);
+  border-radius: 2px;
+}
+
+/* Fragetext */
+.q {
+  font-size: 21px;
+  line-height: 1.35;
+  margin: 0 0 16px;
+}
+
+/* Abbildungen zur Frage */
+.imgs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+
+.imgs img {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Antwort-Buttons */
+.ans {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 10px;
+}
+
+/* Runder Buchstabe (A, B, C, D) */
+.ans b {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  font-size: 13px;
+}
+
+/* Richtige Antwort nach dem Antworten */
+.ans.ok {
+  border-color: var(--ok);
+  background: var(--okbg);
+}
+
+.ans.ok b {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #fff;
+}
+
+/* Falsch gewählte Antwort */
+.ans.bad {
+  border-color: var(--bad);
+  background: var(--badbg);
+}
+
+.ans.bad b {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+
+.ans.sel {
+  border-color: var(--acc);
+}
+
+
+/* ---------- 5. Auswertung ---------- */
+
+/* Große Ergebniszahl ("27 von 30 richtig") */
+.big {
+  font-size: 44px;
+  font-weight: 700;
+  margin: 4px 0;
+}
+
+.pass { color: var(--ok); }
+.fail { color: var(--bad); }
+
+/* Karte für eine falsch beantwortete Frage */
+.rev {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 0 0 10px;
+}
+
+.rev p {
+  margin: 4px 0;
+}
+
+.rev .c { color: var(--ok); }   /* richtige Antwort */
+.rev .w { color: var(--bad); }  /* deine Antwort */
