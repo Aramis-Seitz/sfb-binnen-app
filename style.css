@@ -13,12 +13,12 @@
    Alle Farben stehen hier. Ändere nur diese Werte,
    dann passt sich die ganze App an. */
 :root {
-  --bg:     #eef2f1;   /* Seitenhintergrund */
-  --card:   #ffffff;   /* Karten, Antwort-Buttons */
+  --bg:     #000000;   /* Seitenhintergrund */
+  --card:   #181818;   /* Karten, Antwort-Buttons */
   --ink:    #10242e;   /* Haupttext */
-  --mute:   #5b707a;   /* Nebentext */
+  --mute:   #8fa5ad;   /* Nebentext */
   --line:   #cfdbdc;   /* Rahmen, Linien */
-  --acc:    #1d5c73;   /* Akzentfarbe (Buttons, Fortschritt) */
+  --acc:    #181818;   /* Akzentfarbe (Buttons, Fortschritt) */
   --onacc:  #ffffff;   /* Text auf Akzentfarbe */
   --ok:     #1f8a4c;   /* richtig */
   --bad:    #c8382f;   /* falsch */
@@ -29,13 +29,13 @@
 /* Dunkelmodus: wird automatisch aktiv, wenn das Gerät dunkel eingestellt ist */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:     #0d1b22;
-    --card:   #14272f;
-    --ink:    #e6eef0;
+    --bg:     #000000;
+    --card:   #181818;
+    --ink:    #c3c8ca;
     --mute:   #8fa5ad;
-    --line:   #25404a;
-    --acc:    #5fb3cf;
-    --onacc:  #06222c;
+    --line:   #cfdbdc;
+    --acc:    #181818;
+    --onacc:  #f4f5f6;
     --ok:     #46c27a;
     --bad:    #ef6b61;
     --okbg:   #12342a;
@@ -76,7 +76,7 @@ main {
 /* Überschriften und Fragetext (Serifenschrift) */
 h1,
 .q {
-  font-family: "Iowan Old Style", Georgia, serif;
+  font-family:  'Inter', sans-serif;
   font-weight: 600;
 }
 
