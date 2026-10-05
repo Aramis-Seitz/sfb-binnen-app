@@ -11,36 +11,22 @@
 
 /* ---------- 1. Farben ----------
    Alle Farben stehen hier. Ändere nur diese Werte,
-   dann passt sich die ganze App an. */
+   dann passt sich die ganze App an.
+   Die App ist immer dunkel, unabhängig von der Geräte-Einstellung. */
 :root {
-  --bg:     #eef2f1;   /* Seitenhintergrund */
-  --card:   #ffffff;   /* Karten, Antwort-Buttons */
-  --ink:    #10242e;   /* Haupttext */
-  --mute:   #5b707a;   /* Nebentext */
-  --line:   #cfdbdc;   /* Rahmen, Linien */
-  --acc:    #1d5c73;   /* Akzentfarbe (Buttons, Fortschritt) */
-  --onacc:  #ffffff;   /* Text auf Akzentfarbe */
-  --ok:     #1f8a4c;   /* richtig */
-  --bad:    #c8382f;   /* falsch */
-  --okbg:   #e4f4ea;   /* Hintergrund richtige Antwort */
-  --badbg:  #fbe9e7;   /* Hintergrund falsche Antwort */
-}
+  color-scheme: dark;   /* dunkle Scrollbars, Dialoge und Formularelemente */
 
-/* Dunkelmodus: wird automatisch aktiv, wenn das Gerät dunkel eingestellt ist */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:     #0d1b22;
-    --card:   #14272f;
-    --ink:    #e6eef0;
-    --mute:   #8fa5ad;
-    --line:   #25404a;
-    --acc:    #5fb3cf;
-    --onacc:  #06222c;
-    --ok:     #46c27a;
-    --bad:    #ef6b61;
-    --okbg:   #12342a;
-    --badbg:  #3a1f1d;
-  }
+  --bg:     #000000;   /* Seitenhintergrund */
+  --card:   #181818;   /* Karten, Antwort-Buttons */
+  --ink:    #c3c8ca;   /* Haupttext */
+  --mute:   #8fa5ad;   /* Nebentext */
+  --line:   #cfdbdc;   /* Rahmen, Linien */
+  --acc:    #181818;   /* Akzentfarbe (Buttons, Fortschritt) */
+  --onacc:  #f4f5f6;   /* Text auf Akzentfarbe */
+  --ok:     #46c27a;   /* richtig */
+  --bad:    #ef6b61;   /* falsch */
+  --okbg:   #12342a;   /* Hintergrund richtige Antwort */
+  --badbg:  #3a1f1d;   /* Hintergrund falsche Antwort */
 }
 
 
@@ -73,10 +59,13 @@ main {
   padding: 20px 16px 48px;
 }
 
-/* Überschriften und Fragetext (Serifenschrift) */
+/* Überschriften und Fragetext.
+   Inter wird nur genutzt, wenn es auf dem Gerät installiert ist (es wird nichts nachgeladen),
+   sonst greift die Systemschrift. */
 h1,
-.q {
-  font-family: "Iowan Old Style", Georgia, serif;
+.q,
+.legal h2 {
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-weight: 600;
 }
 
@@ -105,8 +94,9 @@ button {
 }
 
 /* Sichtbarer Rahmen bei Tastatur-Bedienung */
-button:focus-visible {
-  outline: 3px solid var(--acc);
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--onacc);
   outline-offset: 2px;
 }
 
@@ -355,3 +345,66 @@ button:focus-visible {
 
 .rev .c { color: var(--ok); }   /* richtige Antwort */
 .rev .w { color: var(--bad); }  /* deine Antwort */
+
+
+/* ---------- 6. Impressum, Datenschutz und Fußzeile ---------- */
+
+/* Rechtliche Seiten (impressum.html, datenschutz.html) */
+.legal h2 {
+  font-size: 19px;
+  color: var(--ink);
+  margin: 28px 0 8px;
+}
+
+.legal p,
+.legal li {
+  max-width: 65ch;
+}
+
+.legal ul {
+  padding-left: 22px;
+}
+
+.legal a,
+.back {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.legal code {
+  background: var(--card);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.legal-nav {
+  margin-top: 32px;
+}
+
+/* Gelb markierte Platzhalter. Vor dem Veröffentlichen ersetzen und entfernen. */
+.todo {
+  background: #ffe9a8;
+  color: #000;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+/* Fußzeile mit Links zu Impressum und Datenschutz (index.html) */
+.foot {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 16px 32px;
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.foot a {
+  color: var(--mute);
+}
