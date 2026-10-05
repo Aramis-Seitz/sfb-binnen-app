@@ -418,6 +418,40 @@
       if (!reveal) window.scrollTo(0, 0);
     }
 
+    // ----- Auswertung: Fragenlisten zum Nachschauen -----
+
+    // Abbildungen einer Frage (wie in der Fragen-Ansicht)
+    function reviewImages(q) {
+      if (!q.img.length) return '';
+      return `<div class="imgs">${q.img.map(src =>
+        `<img src="${src}" alt="Abbildung zur Frage" onload="scaleImg(this)">`).join('')}</div>`;
+    }
+
+    // Eine Frage mit Antwort(en)
+    function reviewCard(item, isRight) {
+      const q = item.q;
+      const yours = isRight ? '' : (item.pick !== null
+        ? `<p class="w">Deine Antwort: ${esc(q.a[item.order[item.pick]])}</p>`
+        : '<p class="w">Nicht beantwortet</p>');
+      return `
+        <div class="rev ${isRight ? 'good' : 'wrong'}">
+          <p><b>${q.id}.</b> ${esc(q.q)}</p>
+          ${reviewImages(q)}
+          ${yours}
+          <p class="c">Richtig: ${esc(q.a[0])}</p>
+        </div>`;
+    }
+
+    // Einklappbarer Abschnitt, standardmäßig offen
+    function reviewSection(title, items, isRight) {
+      if (!items.length) return '';
+      return `
+        <details class="review" open>
+          <summary>${title} (${items.length})</summary>
+          ${items.map(item => reviewCard(item, isRight)).join('')}
+        </details>`;
+    }
+
     // ----- Auswertung -----
     function renderResult() {
       // Prüfung: alle Fragen zählen. Üben: nur die beantworteten.
@@ -456,19 +490,13 @@
           ${rows}`;
       }
 
-      // Liste der falschen Fragen
-      if (wrong.length) {
-        html += '<h2>Falsch beantwortet</h2>' + wrong.map(item => `
-          <div class="rev">
-            <p><b>${item.q.id}.</b> ${esc(item.q.q)}</p>
-            ${item.pick !== null
-              ? `<p class="w">Deine Antwort: ${esc(item.q.a[item.order[item.pick]])}</p>`
-              : '<p class="w">Nicht beantwortet</p>'}
-            <p class="c">Richtig: ${esc(item.q.a[0])}</p>
-          </div>`).join('');
-      } else {
-        html += '<p class="pass">Alles richtig.</p>';
-      }
+      // Listen zum Nachschauen: erst die falschen, dann die richtigen Fragen
+      const right = counted.filter(isCorrect);
+
+      if (!wrong.length) html += '<p class="pass">Alles richtig.</p>';
+
+      html += reviewSection('Falsch beantwortet', wrong, false);
+      html += reviewSection('Richtig beantwortet', right, true);
 
       html += '<button class="primary" data-a="home">Zur Übersicht</button>';
       app.innerHTML = html;

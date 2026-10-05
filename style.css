@@ -394,6 +394,27 @@ a:focus-visible {
 }
 
 .rev .c { color: var(--ok); }   /* richtige Antwort */
+
+/* Rand nach Ergebnis: grün = richtig beantwortet, rot = falsch */
+.rev.good  { border-left: 4px solid var(--ok); }
+.rev.wrong { border-left: 4px solid var(--bad); }
+
+.rev .imgs {
+  margin: 8px 0;
+}
+
+/* Einklappbare Abschnitte in der Auswertung */
+.review {
+  margin-top: 28px;
+}
+
+.review summary {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mute);
+  cursor: pointer;
+  margin-bottom: 8px;
+}
 .rev .w { color: var(--bad); }  /* deine Antwort */
 
 
